@@ -10,15 +10,13 @@ builder.Services.AddDbContext<DataContext>(opt =>
 {
   opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
-// configure DefaultConnection in appsettings
-// then create migrations:
-// dotnet ef migrations add InitialCreate -o Data/Migrations
-
-// then
-// generate db
-// dotnet ef database update
+builder.Services.AddCors();
 
 var app = builder.Build();
+
+
+//CORS middleware
+app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:4200", "https://localhost:4200"));
 
 app.MapControllers();
 
