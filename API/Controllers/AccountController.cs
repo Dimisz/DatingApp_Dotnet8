@@ -3,15 +3,16 @@ using System.Text;
 using API.Data;
 using API.DTOs;
 using API.Entities;
+using API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
-public class AccountController(DataContext ctx) : BaseApiController
+public class AccountController(DataContext ctx, ITokenService tokenService) : BaseApiController
 {
   [HttpPost("register")] // account/register
-  public async Task<ActionResult<AppUser>> Register(RegisterDTO registerDTO)
+  public async Task<ActionResult<UserDTO>> Register(RegisterDTO registerDTO)
   {
     if (await UserExists(registerDTO.Username)) return BadRequest("username is taken");
 
@@ -25,11 +26,15 @@ public class AccountController(DataContext ctx) : BaseApiController
 
     ctx.Users.Add(user);
     await ctx.SaveChangesAsync();
-    return user;
+    return new UserDTO
+    {
+      Username = user.UserName,
+      Token = tokenService.CreateToken(user)
+    };
   }
 
   [HttpPost("login")]
-  public async Task<ActionResult<AppUser>> Login(LoginDTO loginDTO)
+  public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDTO)
   {
     var user = await ctx.Users.FirstOrDefaultAsync(x => x.UserName == loginDTO.Username.ToLower());
 
@@ -45,7 +50,11 @@ public class AccountController(DataContext ctx) : BaseApiController
       // SHOULD BE CHANGED TO 'INVALID CREDENTIALS' IN PROD
       if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid password");
     }
-    return user;
+    return new UserDTO
+    {
+      Username = user.UserName,
+      Token = tokenService.CreateToken(user)
+    };
   }
 
 
